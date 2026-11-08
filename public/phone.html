@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>好友房间 · 客厅大富翁</title>
+  <link rel="stylesheet" href="/play.css">
+  <link rel="stylesheet" href="/phone.css">
+</head>
+<body class="room-page room-lobby">
+  <div id="gameRoot"></div>
+  <div class="room-ui">
+    <div class="money-feed" id="money" aria-live="polite"></div>
+    <div class="sheet" id="sheet"></div>
+    <dialog id="inviteDialog"><form method="dialog"><button class="sbtn close-dialog" aria-label="关闭">关闭</button></form><h2 id="inviteTitle"></h2><div id="inviteQr"></div><a id="inviteUrl"></a><button class="btn gold" id="copyInvite">复制链接</button></dialog>
+  </div>
+  <script src="/vendor/qrcode.js" defer></script>
+  <script type="module" src="/phone.js"></script>
+</body>
+</html>

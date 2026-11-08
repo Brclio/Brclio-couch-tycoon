@@ -1,0 +1,20 @@
+{
+  "name": "party-tycoon",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npm run dev",
+    "test": "node test/rules-regression.mjs && node test/sim.mjs",
+    "dev": "npm run assets && wrangler dev --var STORAGE_MODE:local --port 5200",
+    "assets": "node scripts/assets.mjs",
+    "deploy": "npm run assets && wrangler deploy",
+    "test:classic": "node test/party.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "playwright-core": "1.61.1",
+    "wrangler": "4.152.0"
+  }
+}

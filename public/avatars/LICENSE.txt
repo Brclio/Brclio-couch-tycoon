@@ -1,0 +1,2 @@
+Fluent Emoji 3D by Microsoft (MIT License), packaged as @lobehub/fluent-emoji-3d@1.1.0.
+https://github.com/microsoft/fluentui-emoji

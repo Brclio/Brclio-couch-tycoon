@@ -1,0 +1,77 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "party-tycoon",
+  "main": "cloud/worker.js",
+  "compatibility_date": "2026-06-01",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./.web-assets",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "run_worker_first": [
+      "/",
+      "/party",
+      "/local",
+      "/online",
+      "/p/*",
+      "/t/*",
+      "/ws",
+      "/api/*",
+      "/tts"
+    ]
+  },
+  "vars": {
+    "GITHUB_REPOSITORY": "BrclioData/brclio-couch-tycoon-data",
+    "GITHUB_BRANCH": "main",
+    "GITHUB_APP_CLIENT_ID": "Iv23lioN2jeqvKZ1oi2e"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ROOMS",
+        "class_name": "GuestRoom"
+      },
+      {
+        "name": "LOBBY",
+        "class_name": "Lobby"
+      },
+      {
+        "name": "SAVES",
+        "class_name": "LocalSave"
+      },
+      {
+        "name": "ARCHIVES",
+        "class_name": "MatchArchive"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "GuestRoom",
+        "Lobby",
+        "LocalSave",
+        "MatchArchive"
+      ]
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "CREATE_LIMIT",
+      "namespace_id": "31001",
+      "simple": {
+        "limit": 20,
+        "period": 60
+      }
+    },
+    {
+      "name": "SPEECH_LIMIT",
+      "namespace_id": "31002",
+      "simple": {
+        "limit": 45,
+        "period": 60
+      }
+    }
+  ]
+}

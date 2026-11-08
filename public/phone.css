@@ -1,0 +1,245 @@
+/* 提示页：满员、已开局、连接中 */
+.room-ui .notice { min-height: 80dvh; display: grid; place-content: center; justify-items: center; text-align: center; gap: 4px; }
+.room-ui .notice img { width: 120px; height: 120px; filter: drop-shadow(0 10px 20px rgba(0,0,0,.4)); }
+.room-ui .notice h1 { margin: 12px 0 0; font-size: 24px; }
+.room-ui .notice p { margin: 0; color: var(--muted); }
+
+/* 我自己 */
+.room-ui .me { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 20px; background: color-mix(in srgb, var(--c) 22%, rgba(0,0,0,.25)); border-left: 6px solid var(--c); }
+.room-ui .me-av { width: 76px; height: 76px; flex: none; display: grid; place-items: center; border-radius: 18px; background: rgba(0,0,0,.25); }
+.room-ui .me-av img { width: 66px; height: 66px; filter: drop-shadow(0 4px 4px rgba(0,0,0,.35)); animation: room-pop .4s cubic-bezier(.2,1.6,.4,1); }
+.room-ui .me-av span { font-size: 38px; font-weight: 900; color: var(--muted); }
+.room-ui .me-main { flex: 1; min-width: 0; }
+.room-ui .me-main label { font-size: 13px; color: var(--muted); }
+.room-ui .me-main input { display: block; width: 100%; margin-top: 2px; padding: 8px 0; background: none; border: 0; border-bottom: 2px dashed rgba(255,255,255,.25); outline: none; font-size: 24px; font-weight: 800; }
+.room-ui .me-main input:focus { border-bottom-color: var(--gold); }
+.room-ui .me-main input:disabled { border-bottom-color: transparent; opacity: 1; -webkit-text-fill-color: var(--ink); }
+
+.room-ui .label { display: flex; justify-content: space-between; align-items: baseline; margin: 22px 2px 10px; font-size: 17px; }
+.room-ui .label span { font-size: 13px; font-weight: 400; color: var(--muted); }
+
+/* 角色格子：3 列大按钮 */
+.room-ui .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.room-ui .char { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 4px 8px; border-radius: 18px; border: 2px solid transparent; background: var(--panel); font-size: 14px; font-weight: 700; transition: transform .12s; }
+.room-ui .char img { width: 64px; height: 64px; }
+.room-ui .char:active:not(:disabled) { transform: scale(.94); }
+.room-ui .char.mine { border-color: var(--gold); background: rgba(245,196,81,.16); }
+.room-ui .char.taken { opacity: .32; filter: grayscale(1); }
+.room-ui .grid.locked .char:not(.mine) { opacity: .32; }
+.room-ui .char .bonus { position: absolute; top: 6px; right: 6px; font-style: normal; font-size: 11px; font-weight: 800; background: var(--gold); color: #3b2300; padding: 0 5px; border-radius: 6px; }
+
+/* 底部大按钮 */
+.room-ui .dock { position: fixed; left: 0; right: 0; bottom: 0; padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, rgba(10,17,40,.95) 30%); }
+.room-ui .btn { display: block; width: 100%; max-width: 488px; margin: 0 auto; padding: 16px; border: 0; border-radius: 16px; font-size: 20px; font-weight: 800; background: #f1f5f9; color: #1e293b; box-shadow: 0 .2em 0 #cbd5e1; }
+.room-ui .btn.gold { background: linear-gradient(#ffd66b, #f0a92a); color: #3b2300; box-shadow: 0 .2em 0 #b7791f, 0 .4em 1em rgba(245,196,81,.35); }
+.room-ui .btn:disabled { opacity: .45; }
+.room-ui .btn:active:not(:disabled) { transform: translateY(.12em); }
+
+/* 开局后：钱包 */
+.room-ui .wallet { margin-top: 6px; padding: 14px 16px; border-radius: 22px; display: flex; align-items: center; gap: 14px; background: color-mix(in srgb, var(--c) 26%, rgba(0,0,0,.25)); border-left: 6px solid var(--c); }
+.room-ui .wallet.turn { box-shadow: 0 0 0 2px var(--gold), 0 8px 30px rgba(245,196,81,.25); }
+.room-ui .w-av { width: 72px; height: 72px; flex: none; filter: drop-shadow(0 6px 8px rgba(0,0,0,.4)); }
+.room-ui .w-main { min-width: 0; }
+.room-ui .w-name { font-size: 17px; font-weight: 800; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.room-ui .w-name em { font-style: normal; font-size: 12px; font-weight: 700; padding: 1px 7px; border-radius: 6px; background: rgba(0,0,0,.3); color: var(--muted); }
+.room-ui .w-cash { font-size: 40px; font-weight: 900; color: var(--gold); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.room-ui .w-owe { color: var(--neg); font-weight: 800; }
+.room-ui .status { margin-top: 12px; padding: 16px; border-radius: 18px; background: var(--panel); text-align: center; display: grid; gap: 2px; }
+.room-ui .status b { font-size: 20px; }
+.room-ui .status span { color: var(--muted); font-size: 14px; }
+.room-ui .status.turn b { color: var(--gold); }
+
+/* 轮到我：操作按钮 */
+.room-ui .actions { margin-top: 12px; padding: 14px; border-radius: 20px; background: rgba(245,196,81,.1); border: 1px solid rgba(245,196,81,.35); display: grid; gap: 10px; }
+.room-ui .a-head { display: grid; gap: 2px; text-align: center; }
+.room-ui .a-head b { font-size: 20px; color: var(--gold); }
+.room-ui .a-head span { font-size: 14px; color: var(--muted); }
+.room-ui .actions .btn { font-size: 17px; padding: 13px; }
+.room-ui .actions .btn.big { font-size: 21px; padding: 16px; }
+.room-ui .dice-btn { font-size: 26px !important; padding: 22px !important; }
+.room-ui .btn.ghost { background: transparent; color: var(--muted); box-shadow: none; border: 1px solid var(--panel-line); }
+.room-ui .btn.danger { color: #dc2626; }
+.room-ui .buy-card { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: rgba(0,0,0,.25); }
+.room-ui .buy-card .flag, .room-ui .buy-card .sq-ic { width: 52px; height: 38px; border-radius: 6px; object-fit: cover; font-style: normal; font-size: 30px; display: grid; place-items: center; }
+.room-ui .buy-card div { display: grid; }
+.room-ui .buy-card b { font-size: 19px; }
+.room-ui .buy-card span { font-size: 13px; color: var(--muted); }
+
+/* 大屏等我确认 */
+.room-ui .confirm { margin-top: 12px; padding: 18px 16px; border-radius: 20px; text-align: center; background: rgba(251,113,133,.12); border: 1px solid rgba(251,113,133,.4); display: grid; gap: 6px; animation: room-pop .3s cubic-bezier(.2,1.4,.4,1); }
+.room-ui .confirm.tone-good { background: rgba(74,222,128,.12); border-color: rgba(74,222,128,.4); }
+.room-ui .confirm.tone-neutral { background: var(--panel); border-color: var(--panel-line); }
+.room-ui .cf-title { font-size: 20px; font-weight: 800; }
+.room-ui .confirm p { margin: 0; color: var(--muted); font-size: 14px; }
+.room-ui .cf-amt { font-size: 34px; font-weight: 900; color: var(--gold); font-variant-numeric: tabular-nums; }
+.room-ui .confirm .btn { margin-top: 6px; font-size: 21px; }
+.room-ui .cf-hint { font-size: 12px; color: var(--muted); }
+
+/* 我的资产 */
+.room-ui .empty { margin: 0; padding: 12px; border-radius: 14px; background: var(--panel); color: var(--muted); font-size: 14px; text-align: center; }
+.room-ui .assets { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.room-ui .assets li { position: relative; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 10px; padding: 8px 10px 8px 14px; border-radius: 14px; background: var(--panel); overflow: hidden; }
+.room-ui .assets li.mort { opacity: .7; }
+.room-ui .a-band { position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--g); }
+.room-ui .assets .flag, .room-ui .assets .sq-ic { width: 34px; height: 24px; border-radius: 4px; object-fit: cover; font-style: normal; font-size: 20px; display: grid; place-items: center; }
+.room-ui .a-name { font-weight: 700; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.room-ui .a-name em { font-style: normal; font-size: 11px; color: var(--neg); border: 1px solid currentColor; border-radius: 5px; padding: 0 4px; }
+.room-ui .a-name small { font-size: 13px; letter-spacing: -2px; }
+.room-ui .a-btns { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
+.room-ui .a-btns:empty { display: none; }
+.room-ui .sbtn { border: 0; border-radius: 10px; padding: 8px 12px; font-size: 14px; font-weight: 700; background: rgba(255,255,255,.12); }
+.room-ui .sbtn.warn { background: rgba(251,113,133,.2); }
+.room-ui .sbtn:disabled { opacity: .35; }
+
+.room-ui .order { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.room-ui .order li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 14px; background: var(--panel); border-left: 5px solid var(--c); }
+.room-ui .order li img { width: 34px; height: 34px; }
+.room-ui .order li span { flex: 1; font-weight: 700; }
+.room-ui .order li b { font-variant-numeric: tabular-nums; }
+.room-ui .order li.cur { background: color-mix(in srgb, var(--c) 25%, rgba(0,0,0,.2)); }
+.room-ui .order li.out { opacity: .4; }
+.room-ui .order li.me span::after { content: '（我）'; color: var(--muted); font-weight: 400; }
+
+/* 打完 */
+.room-ui .result { margin-top: 12px; padding: 20px; border-radius: 22px; background: var(--panel); text-align: center; display: grid; justify-items: center; gap: 4px; }
+.room-ui .result img { width: 96px; height: 96px; }
+.room-ui .result b { font-size: 28px; }
+.room-ui .result.win b { color: var(--gold); }
+.room-ui .result span { color: var(--muted); }
+
+/* 挂牌卖地：卖家的出售中条、买家的出售卡、定价面板 */
+.room-ui .sbtn.sale { background: rgba(245,196,81,.22); color: var(--gold); }
+.room-ui .on-sale { align-self: center; font-size: 12px; font-weight: 800; color: var(--gold); }
+.room-ui .selling { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(0,0,0,.25); border: 1px dashed rgba(245,196,81,.5); }
+.room-ui .selling div { flex: 1; display: grid; min-width: 0; }
+.room-ui .selling span { font-size: 13px; color: var(--muted); }
+.room-ui .selling .flag, .room-ui .selling .sq-ic, .room-ui .of-what .flag, .room-ui .of-what .sq-ic, .room-ui .sh-head .flag, .room-ui .sh-head .sq-ic { width: 44px; height: 32px; flex: none; border-radius: 5px; object-fit: cover; font-style: normal; font-size: 24px; display: grid; place-items: center; }
+.room-ui .offer { margin-top: 12px; padding: 14px; border-radius: 20px; display: grid; gap: 10px; text-align: center; background: color-mix(in srgb, var(--c) 16%, rgba(0,0,0,.3)); border: 2px solid var(--gold); box-shadow: 0 8px 30px rgba(245,196,81,.2); animation: room-pop .3s cubic-bezier(.2,1.4,.4,1); }
+.room-ui .of-head { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; }
+.room-ui .of-head img { width: 30px; height: 30px; }
+.room-ui .of-what { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: rgba(0,0,0,.25); text-align: left; }
+.room-ui .of-what > div { display: grid; gap: 4px; min-width: 0; }
+.room-ui .of-what b { font-size: 19px; }
+.room-ui .of-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.room-ui .of-tags em { font-style: normal; font-size: 12px; padding: 1px 6px; border-radius: 6px; background: rgba(255,255,255,.1); color: var(--muted); }
+.room-ui .of-tags em.mort { color: var(--neg); }
+.room-ui .of-price { font-size: 40px; font-weight: 900; color: var(--gold); font-variant-numeric: tabular-nums; line-height: 1; }
+.room-ui .offer .btn { font-size: 21px; }
+
+.room-ui .sheet { position: fixed; inset: 0; z-index: 40; display: none; align-items: flex-end; background: rgba(5,10,25,.6); }
+.room-ui .sheet.show { display: flex; }
+.room-ui .sh-box { width: 100%; max-width: 520px; margin: 0 auto; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); border-radius: 22px 22px 0 0; background: linear-gradient(180deg, #1d2c58, #142046); display: grid; gap: 12px; animation: room-sheet-up .25s ease-out; }
+.room-ui .sh-head { display: flex; align-items: center; gap: 10px; font-size: 20px; }
+.room-ui .sh-note { margin: 0; color: var(--muted); font-size: 14px; }
+.room-ui .sh-cost { width: 100%; border-collapse: collapse; font-size: 15px; }
+.room-ui .sh-cost td { padding: 4px 2px; }
+.room-ui .sh-cost td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.room-ui .sh-cost .sum td { border-top: 1px solid var(--panel-line); font-weight: 800; }
+.room-ui .sh-warn { margin: 0; color: var(--neg); font-size: 13px; }
+.room-ui .stepper { display: grid; grid-template-columns: auto auto 1fr auto auto; gap: 6px; align-items: center; }
+.room-ui .stepper .sbtn { padding: 12px 8px; font-size: 15px; }
+.room-ui .stepper input { min-width: 0; text-align: center; font-size: 26px; font-weight: 900; color: var(--gold); background: rgba(0,0,0,.3); border: 1px solid var(--panel-line); border-radius: 12px; padding: 6px; }
+.room-ui .sh-diff { text-align: center; color: var(--muted); }
+.room-ui .sh-diff .pos { color: #4ade80; }
+.room-ui .sh-diff .neg { color: var(--neg); }
+.room-ui .sh-btns { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
+.room-ui .sh-btns .btn { font-size: 18px; }
+@keyframes room-sheet-up { from { transform: translateY(100%); } }
+
+.room-ui .toast { position: fixed; left: 50%; top: 16px; z-index: 50; transform: translate(-50%, -150%); padding: 10px 18px; border-radius: 12px; background: #fff; color: #1e293b; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,.4); transition: transform .25s; max-width: calc(100vw - 32px); }
+.room-ui .toast.show { transform: translate(-50%, 0); }
+
+@keyframes room-pop { from { transform: scale(.4); } to { transform: scale(1); } }
+.room-ui .claim { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: -18dvh; }
+.room-ui .claim .char b { width: 64px; height: 64px; display: grid; place-items: center; font-size: 30px; }
+
+/* 钱的变化：钱数滚动变色，每一笔一张小卡 */
+.room-ui .w-cash { transition: color .3s; }
+.room-ui .w-cash.up { color: var(--pos, #4ade80); }
+.room-ui .w-cash.down { color: var(--neg, #f87171); }
+.room-ui .money-feed { position: fixed; left: 12px; right: 12px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 45; display: flex; flex-direction: column-reverse; gap: 8px; pointer-events: none; }
+.room-ui .mcard { display: flex; align-items: center; gap: 10px; max-width: 488px; width: 100%; margin: 0 auto; padding: 10px 14px; border-radius: 16px; background: #fff; color: #1e293b; box-shadow: 0 10px 30px rgba(0,0,0,.45); border-left: 6px solid #16a34a; transform: translateY(24px) scale(.96); opacity: 0; transition: transform .35s cubic-bezier(.3,1.4,.5,1), opacity .3s; }
+.room-ui .mcard.down { border-left-color: #dc2626; }
+.room-ui .mcard.show { transform: none; opacity: 1; }
+.room-ui .mcard img { width: 44px; height: 44px; flex: none; }
+.room-ui .mcard div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.room-ui .mcard b { font-size: 15px; }
+.room-ui .mcard span { font-size: 13px; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.room-ui .mcard em { font-style: normal; font-size: 22px; font-weight: 900; color: #16a34a; font-variant-numeric: tabular-nums; }
+.room-ui .mcard.down em { color: #dc2626; }
+
+/* 没事可做：几秒后自动结束回合 */
+.room-ui .autoend { position: relative; overflow: hidden; display: flex; align-items: center; gap: 10px; max-width: 488px; margin: 10px auto 0; padding: 10px 12px 10px 16px; border-radius: 14px; background: rgba(0,0,0,.3); color: var(--muted); font-weight: 700; }
+.room-ui .autoend span { flex: 1; }
+.room-ui .autoend b { color: var(--gold); font-size: 20px; }
+.room-ui .autoend i { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--gold); transform-origin: left; animation: aeBar var(--ms) linear forwards; }
+@keyframes aeBar { from { transform: scaleX(var(--from, 1)); } to { transform: scaleX(0); } }
+
+.room-page .logo { color:var(--ink); text-decoration:none; }
+.room-page .stage { grid-template-columns:minmax(0,1fr) minmax(320px,375px); }
+.room-page .side { scrollbar-gutter:stable; }
+.room-page #app { min-width:0; }
+.room-ui .top { display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:3px 2px 10px; }
+.room-ui .top b { margin-right:auto; } .room-ui .top span { font-variant-numeric:tabular-nums; color:var(--gold); letter-spacing:.08em; }
+.room-ui .top em { color:var(--neg); font-size:13px; font-style:normal; }
+.room-ui .host-tools { display:flex; gap:8px; margin:0 0 10px; }
+.room-ui .resign { border:0; border-bottom:1px solid var(--panel-line); background:none; padding:4px 0; margin:14px 0 0; color:var(--muted); font-size:12px; }
+.room-ui .seating { min-width:0; align-self:start; padding:20px; border:1px solid var(--panel-line); border-radius:18px; background:var(--panel); }
+.room-ui .seating h2 { font-size:20px; margin:0 0 14px; } .room-ui .seating small { color:var(--muted); font-size:13px; }
+.room-ui .room-seats { list-style:none; display:grid; padding:0; margin:0 0 16px; gap:10px; }
+.room-ui .room-seats li { display:flex; align-items:center; gap:10px; }
+.room-ui .room-seats li div { display:grid; flex:1; } .room-ui .room-seats img,.room-ui .room-seats i { width:42px; height:42px; } .room-ui .room-seats i { border:1px dashed var(--muted); border-radius:50%; display:grid; place-items:center; }
+.room-ui dialog { max-width:min(400px,92vw); width:100%; color:var(--ink); border:1px solid var(--panel-line); border-radius:20px; padding:24px; background:#192a4c; box-shadow:0 15px 80px #0008; }
+.room-ui dialog::backdrop { background:#050d20bd; }
+.room-ui dialog h2 { margin:0 0 12px; font-size:21px; }
+.room-ui .close-dialog { float:right; } .room-ui dialog a { display:block; margin:12px 0; overflow-wrap:anywhere; color:var(--ink); }
+.room-ui #inviteQr { width:min(210px,70%); margin:auto; background:white; border-radius:8px; } .room-ui #inviteQr svg { display:block; width:100%; height:auto; }
+.room-page .side .svc { display:none; } /* 玩家资产和银行操作在房间面板 */
+.room-ui .notice a { color:var(--gold); margin:14px 0; }
+.room-lobby .stage { display:block; width:min(100%,1000px); margin:auto; padding:clamp(14px,4vw,42px); }
+.room-lobby .board-area,.room-lobby .side > :not(#app),.room-lobby .ptabs,.room-lobby .clock { display:none; }
+.room-lobby .side { height:auto; max-height:none; overflow:visible; position:static; }
+.room-lobby .bar .toggles { margin-left:auto; }
+.room-lobby #pickRest { display:grid; grid-template-columns:minmax(0,1fr) minmax(240px,.54fr); gap:12px 24px; }
+.room-lobby #pickRest .label { grid-area:1/1; } .room-lobby #pickRest .grid { grid-area:2/1; grid-template-columns:repeat(6,minmax(0,1fr)); }
+.room-lobby #pickRest .dock { grid-area:3/1; position:static; padding:4px; background:none; }
+.room-lobby #pickRest .seating { grid-area:1/2/4/3; margin-top:20px; }
+.room-lobby .char { min-width:0; } .room-lobby .char img { max-width:85%; height:auto; aspect-ratio:1; }
+.room-lobby .char.taken { opacity:.55; } .room-lobby .me { max-width:100%; }
+.room-paused #prompt,.room-paused #cardLayer { visibility:hidden; }
+.room-page .bar .logo { flex:none; }
+.room-ui [data-host=start] { margin-top:12px; }
+.room-ui .sheet { z-index:70; }
+.room-page .side .room-ui .actions { font-size:16px; min-height:0; }
+.room-page .room-ui .btn { min-height:40px; }
+.room-page .room-ui button:focus-visible,.room-page a:focus-visible { outline:3px solid var(--gold); outline-offset:2px; }
+.room-page .room-ui .btn.ghost { font-size:15px; }
+.room-jump { display:none; color:var(--gold); text-decoration:none; }
+@media(max-width:1050px){
+  .room-page .stage { grid-template-columns:minmax(0,1fr) minmax(300px,35%); }
+  .room-page .side { height:calc(100dvh - 95px); overflow:auto; position:sticky; top:80px; }
+  .room-lobby .stage { display:block; } .room-lobby .side { height:auto; overflow:visible; position:static; }
+}
+@media(max-width:760px){
+  .room-page .stage { display:flex; flex-direction:column; gap:10px; padding:8px; }
+  .room-page .board-area,.room-page .side { width:100%; }
+  .room-page .side { position:static; height:auto; overflow:visible; scrollbar-gutter:auto; }
+  .room-page #app { scroll-margin-top:100px; } .room-page #boardArea { scroll-margin-top:100px; }
+  .room-page .bar { gap:6px; } .room-page .logo span:last-child { display:none; }
+  .room-page .room-jump { display:inline-block; font-size:13px; padding:5px 6px; } .room-lobby .room-jump { display:none; }
+  .room-page .ptabs { overflow-x:auto; display:flex; } .room-page .ptab { flex:1 0 auto; max-width:120px; }
+  .room-page .bar .clock { margin-left:0; } .room-page .bar .toggles { margin-left:auto; }
+  .room-lobby .bar .logo span:last-child { display:inline; } .room-lobby .stage { padding:14px; }
+  .room-lobby #pickRest { display:flex; flex-direction:column; gap:10px; }
+  .room-lobby #pickRest .grid { grid-template-columns:repeat(6,minmax(0,1fr)); gap:6px; }
+  .room-lobby #pickRest .seating { width:100%; margin:4px 0; padding:12px; }
+  .room-lobby .grid .char { border-radius:10px; font-size:11px; padding:6px 1px 4px; } .room-lobby .char .bonus { font-size:8px; right:0; top:0; }
+  .room-lobby .me-av { width:48px; height:48px; } .room-lobby .me-av img { width:44px; height:44px; }
+  .room-page .room-ui .seating button { padding:8px 14px; }
+}
+@media(prefers-reduced-motion:reduce){ *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; } }
+.room-lobby .room-ui .char .bonus { inset:5px 4px auto auto; line-height:1.35; }
+.room-page .banner.big { left:50%; top:26%; padding:10px 18px; gap:12px; width:max-content; max-width:calc(100vw - 24px); }
+.room-page .banner.big .av.lg { width:54px; height:54px; }
+.room-page .banner.big b { font-size:clamp(21px,3vw,36px); }
+.room-page .banner.big .small { font-size:14px; }
