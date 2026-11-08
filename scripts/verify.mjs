@@ -27,6 +27,7 @@ try {
     await cp(path.join(root, name), path.join(dir, name), { recursive: true });
   await symlink(path.join(root, 'node_modules'), path.join(dir, 'node_modules'), 'junction');
   await run('scripts/assets.mjs');
+  await run('scripts/local-config.mjs');
   await run('test/rules-regression.mjs');
   await run('test/git-budget.mjs');
   await run('test/sim.mjs');
@@ -36,6 +37,8 @@ try {
     [
       'node_modules/wrangler/bin/wrangler.js',
       'dev',
+      '--config',
+      '.wrangler-local.json',
       '--port',
       String(port),
       '--var',

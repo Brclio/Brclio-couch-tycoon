@@ -4,6 +4,7 @@ data/
 cache/
 .DS_Store
 .wrangler/
+.wrangler-local.json
 .web-assets/
 .dev.vars
 .dev.vars.*

@@ -33,7 +33,6 @@ const G = {
   selected: null,   // 选中的格子
   busy: false,      // 正在播放动画
   disp: null,       // 动画过程中显示的位置和现金
-  dice: [6, 6],
   spins: 0,
 };
 
@@ -248,12 +247,13 @@ function buildDice() {
     $(`die${k}`).innerHTML = FACE_ORDER.map((n, f) =>
       `<div class="face f${f}">${Array.from({ length: 9 }, (_, j) => `<i class="${PIPS[n].includes(j) ? 'on' : ''}"></i>`).join('')}</div>`).join('');
   }
-  setDice(G.dice, false);
+  setDice(null, false);
 }
 
-function setDice(d, spin) {
-  if (spin) G.spins++;
-  d.forEach((n, k) => {
+function setDice(values, spin) {
+  G.spins = spin ? G.spins + 1 : 0;
+  const dice = values ?? [6, 6];
+  dice.forEach((n, k) => {
     const [x, y] = SHOW[n];
     const extra = G.spins * 360 * (k ? -1 : 1);
     const cube = $(`die${k}`);
@@ -766,7 +766,6 @@ async function playEvents(prev, events) {
     if (PARTY) P.eventIndex = k;
     switch (e.k) {
       case 'dice':
-        G.dice = e.d;
         sfx.dice();
         setDice(e.d, true);
         await sleep(1000);
@@ -1229,6 +1228,7 @@ async function countdown() {
 // 新的一局摆上棋盘；开局事件（角色奖励）播一遍
 async function begin(state) {
   G.state = state;
+  setDice(state.dice, false);
   G.viewer = PARTY ? P.me : current(G.state).id;
   G.feed = [];
   G.selected = null;
@@ -1256,6 +1256,7 @@ async function begin(state) {
 
 function restore(saved) {
   G.state = saved.state;
+  setDice(saved.state.dice, false);
   G.viewer = saved.viewer || current(G.state).id;
   G.feed = saved.feed || [];
   $('tokens').innerHTML = '';

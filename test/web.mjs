@@ -34,6 +34,25 @@ async function until(check, description, timeout = 45000) {
   throw Error('等待超时：' + description);
 }
 
+// Count the dots on the face actually pointing at the camera. This checks the
+// rendered CSS transforms independently of the game's face-to-angle mapping.
+async function expectDice(page, values, animated = false) {
+  const expected = values ?? [6, 6];
+  await until(async () => {
+    const dice = await page.locator('#dice .cube').evaluateAll(cubes => cubes.map(cube => {
+      const turn = new DOMMatrixReadOnly(getComputedStyle(cube).transform);
+      for (const face of cube.querySelectorAll('.face')) {
+        const side = new DOMMatrixReadOnly(getComputedStyle(face).transform);
+        if (turn.multiply(side).m33 > 0.9999) {
+          return {value: face.querySelectorAll('i.on').length, animated: !cube.classList.contains('no-anim')};
+        }
+      }
+      return null;
+    }));
+    return dice.length === 2 && dice.every((d, i) => d?.value === expected[i] && d.animated === animated);
+  }, '骰面显示 ' + expected.join('、'), 5000);
+}
+
 async function roomFlow() {
   const host = await player(1440, 900);
   let guest = await player(375, 812);
@@ -120,6 +139,7 @@ async function roomFlow() {
   await guest.page.locator('.wallet').waitFor();
   assert.equal(guest.id, seat);
   assert.equal(guest.room.seats.length, 2);
+  await expectDice(guest.page, guest.room.game.dice);
   await guest.page.close();
   await until(() => host.room.seats.find(s => s.id === seat)?.online === false, '离线座位');
   await host.page.locator(`[data-do=rejoin][data-pid="${seat}"]`).click();
@@ -156,6 +176,7 @@ async function roomFlow() {
   await host.page.locator('[data-host=start]').click();
   await until(() => host.room?.status === 'playing', '第二局');
   await settled();
+  for (const p of players) await expectDice(p.page, null);
   await host.page.locator('[data-host=finish]').click();
   await host.page.locator('#again').waitFor();
   assert.equal(host.room.game.endReason, 'host');
@@ -172,7 +193,29 @@ async function localFlow() {
   await page.locator('[data-act=roll]:enabled').waitFor();
   assert.equal(await page.locator('#tabs .ptab').count(), 2);
   assert.equal(await page.locator('#board .cell').count(), 68);
-  console.log('✓ 同屏双人存档刷新恢复');
+  await expectDice(page, null);
+  await page.evaluate(() => {
+    // Exercise the exact 2 + 1 result from the production refresh regression.
+    const random = Math.random, values = [0.2, 0.05];
+    Math.random = () => values.length ? values.shift() : random();
+    window.rollingCubes = [];
+    for (const cube of document.querySelectorAll('#dice .cube')) {
+      cube.addEventListener('transitionrun', e => {
+        if (e.target === cube && e.propertyName === 'transform') window.rollingCubes.push(cube.id);
+      });
+    }
+  });
+  await page.locator('[data-act=roll]:enabled').click();
+  await expectDice(page, [2, 1], true);
+  assert.deepEqual(await page.evaluate(() => [...new Set(window.rollingCubes)].sort()), ['die0', 'die1']);
+  await page.reload();
+  await expectDice(page, [2, 1]);
+  await page.locator('#newGame').click();
+  await page.locator('[data-count="2"]').click();
+  await page.locator('#start').click();
+  await page.locator('[data-act=roll]:enabled').waitFor();
+  await expectDice(page, null);
+  console.log('✓ 同屏双人存档刷新恢复，骰面与存档一致，掷骰有旋转动画，新局回到初始骰面');
 }
 
 async function lobbyFlow() {
