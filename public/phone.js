@@ -1,9 +1,10 @@
 // 同一个房间页面包含棋盘、钱包、玩家操作和主持人控制。身份始终属于自己的座位。
+import { rentPreview } from './rent-preview.js';
 import { updateRoomBoard, detachRoomBoard } from './play.js';
 import {
   CHARS, AVATAR_BONUS, PLAYER_COLORS, SQUARES, GROUPS, JAIL_FINE, BUILD_PER_STOP, mortgageValue, unmortgageCost,
 } from '/shared/board.js';
-import { legalActions, current, player, totalOwed, saleCost, rentFor } from '/shared/engine.js';
+import { legalActions, current, player, totalOwed, saleCost } from '/shared/engine.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -16,8 +17,16 @@ const KEY = `mf_phone_${CODE}`;
 const S = { ws: null, room: null, me: null, denied: null, claim: new URLSearchParams(location.search).get('claim') || '', retry: 0, sending: false, motion: false,
   moneyQ: [], seenSeq: null, cashAnim: null, autoEndAt: 0 };
 
-const getToken = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
-const setToken = (t) => { try { localStorage.setItem(KEY, t); } catch {} };
+let seatToken = '';
+const getToken = () => {
+  if (seatToken) return seatToken;
+  try { return localStorage.getItem(KEY) || ''; } catch { return ''; }
+};
+const setToken = value => {
+  seatToken = value;
+  try { localStorage.setItem(KEY, value); }
+  catch { toast('此浏览器无法保存身份，请保留当前页面'); }
+};
 
 function toast(msg) {
   const t = $('toast');
@@ -44,7 +53,13 @@ function connect() {
       try { localStorage.setItem('mf_last_room', CODE); } catch {}
     }
     if (m.t === 'claimLink') invite('找回座位', m.url);
-    if (m.t === 'denied') { S.denied = m; render(); }
+    if (m.t === 'denied') {
+      S.denied = m;
+      if (m.reason === 'gone') {
+        try { if (localStorage.getItem('mf_last_room') === CODE) localStorage.removeItem('mf_last_room'); } catch {}
+      }
+      render();
+    }
     // 抢购慢了一步（地已卖掉，或者别人抢购的动画正在演）：offerNews 会说是谁买走的，不再弹原话
     const late = S.lastAct === 'acceptOffer' && ['现在没有人在卖地', '请等本次动画和确认完成'].includes(m.msg);
     if (m.t === 'error' && !late) toast(m.msg);
@@ -56,12 +71,12 @@ function connect() {
       if (m.room.autoEnd && !S.autoEndAt) S.autoEndTotal = m.room.autoEnd.left;
       S.autoEndAt = m.room.autoEnd ? performance.now() + m.room.autoEnd.left : 0;
       const g = m.room.game;
-      // 新的一步：记下跟我有关的钱，等大屏演完一起播
+      // 新的一步：记下和本座位有关的流水，等棋盘动画结束再播放
       if (g && g.seq !== S.seenSeq) {
         if (S.seenSeq != null) S.moneyQ.push(...(g.events || []).filter(e => e.k === 'money' && e.amount && (e.from === m.me || e.to === m.me)));
         S.seenSeq = g.seq;
       }
-      // 大屏演完之前，钱数还按演之前的显示（扣钱要等本人在手机上点了、大屏上钱飞走才算）
+      // 动画期间保持上一笔显示余额；服务器已完成本次结算。
       if (g && (!m.room.showing || !S.shownCash)) {
         const old = S.shownCash?.[m.me];
         S.shownCash = Object.fromEntries(g.players.map(p => [p.id, p.cash]));
@@ -230,10 +245,6 @@ function offerNews(prev, g) {
   else toast(`没人买，${sq.name}还是你的`);
 }
 
-// 这块地现在的过路费（和大屏一样的算法）
-function rentNow(g, idx) {
-  return rentFor(g, idx, g.dice?.reduce((sum, die) => sum + die, 0) || 7);
-}
 const houseText = (n) => n === 5 ? '一座酒店' : n ? `${n} 栋房` : '';
 
 const ART = { airport: '✈', utility: '⚡' };
@@ -278,7 +289,7 @@ function renderPlaying(app) {
     <ol class="order">${order.map(o => `<li class="${o.id === p.id ? 'me' : ''} ${o.id === cur.id && !ended ? 'cur' : ''} ${o.bankrupt ? 'out' : ''}" style="--c:${o.color}"><img src="/avatars/${o.avatar}.webp" alt=""><span>${esc(o.name)}</span><b>${o.bankrupt ? '破产' : money(cash(o))}</b></li>`).join('')}</ol>`;
 }
 
-// 大屏弹框在等我确认：付钱、收下、知道了
+// 服务器正在等待这个座位确认扣款、卡片或清算。
 function confirmHtml(w) {
   return `
     <section class="confirm tone-${esc(w.tone)}">
@@ -286,7 +297,7 @@ function confirmHtml(w) {
       ${w.lines.map(l => `<p>${esc(l)}</p>`).join('')}
       ${w.amount ? `<div class="cf-amt">${money(w.amount)}</div>` : ''}
       <button class="btn gold big" data-ack>${esc(w.button)}</button>
-      
+
     </section>`;
 }
 
@@ -375,7 +386,7 @@ function offerHtml(g, p, myCash, locked) {
     <section class="offer" style="--c:${seller.color}">
       <div class="of-head"><img src="/avatars/${seller.avatar}.webp" alt=""><span>${esc(seller.name)} 在卖地</span></div>
       <div class="of-what">${squareArt(sq)}<div><b>${esc(sq.name)}</b>
-        <span class="of-tags"><em>${pr.houses ? `连${houseText(pr.houses)}` : '空地'}</em>${pr.mortgaged ? '<em class="mort">抵押中</em>' : ''}<em>过路费 ${money(rentNow(g, o.square))}</em></span></div></div>
+        <span class="of-tags"><em>${pr.houses ? `连${houseText(pr.houses)}` : '空地'}</em>${pr.mortgaged ? '<em class="mort">抵押中</em>' : ''}<em>过路费 ${rentPreview(g, o.square)}</em></span></div></div>
       <div class="of-price">${money(o.price)}</div>
       <button class="btn gold big" data-buy-offer="${o.square}" ${afford && !locked ? '' : 'disabled'}>${locked ? '等待动画…' : afford ? `抢购 ${money(o.price)}` : '钱不够'}</button>
       <div class="cf-hint">你有 ${money(myCash)}${pr.mortgaged ? ` · 买下后要自己还贷 ${money(unmortgageCost(sq))} 才能收租` : ''}</div>

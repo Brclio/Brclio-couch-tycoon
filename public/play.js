@@ -1,4 +1,5 @@
 // 共用棋盘。单机对局在本地执行引擎，好友房间只播放服务器已裁决的动作。
+import { rentPreview } from './rent-preview.js';
 import './board-layout.js';
 import { boardPosition } from './board-position.js';
 import { startCloudSave, queueCloudSave, newCloudGame, showCloudSave } from './cloud-save.js';
@@ -6,7 +7,7 @@ import {
   SQUARES, GROUPS, baseRent, HOUSE_MULT, AIRPORT_RENT, mortgageValue, unmortgageCost,
   JAIL_FINE, START_CASH, AVATAR_BONUS, CHARS, GO_SALARY, PLAYER_COLORS, BUILD_PER_STOP, JAIL_POS, AIRPORTS, LONG_SIDE, SHORT_SIDE, BOARD_SIZE,
 } from '/shared/board.js';
-import { createGame, act, legalActions, current, totalOwed, player, saleCost, rentFor } from '/shared/engine.js';
+import { createGame, act, legalActions, current, totalOwed, player, saleCost } from '/shared/engine.js';
 import { sfx, speak, stopSpeech, prefetchSpeech, unlock, getPrefs, setPref } from '/sfx.js';
 
 const KEY = 'mf_local_v2';   // v2：68 格棋盘，旧存档不兼容
@@ -586,9 +587,7 @@ async function flyPropTo(square, heir) {
 
 const houseText = (n) => n === 5 ? '一座酒店' : n ? `${n} 栋房` : '';
 
-function rentNow(idx) {
-  return rentFor(G.state, idx, G.state.dice?.reduce((sum, die) => sum + die, 0) || 7);
-}
+
 
 // 第一步：卖家定价，默认 = 成本 + $100
 function pickPrice(idx) {
@@ -648,7 +647,7 @@ function showOffer() {
         <div class="pbody">
           <div class="offer-what">
             <span class="offer-price">${money(o.price)}</span>
-            <span class="offer-tags">${pr.houses ? `<em class="bk-house">连${houseText(pr.houses)}</em>` : '<em class="bk-house">空地</em>'}${pr.mortgaged ? '<em class="bk-mort">抵押中</em>' : ''}<em class="bk-rent">过路费现在 ${money(rentNow(o.square))}</em></span>
+            <span class="offer-tags">${pr.houses ? `<em class="bk-house">连${houseText(pr.houses)}</em>` : '<em class="bk-house">空地</em>'}${pr.mortgaged ? '<em class="bk-mort">抵押中</em>' : ''}<em class="bk-rent">过路费现在 ${rentPreview(G.state, o.square)}</em></span>
           </div>
           <p>谁要？买得起的人点自己的头像：</p>
           <div class="buyers">${buyers.map(b => `
@@ -924,7 +923,7 @@ function phaseText(s, cur) {
   return '';
 }
 
-// 聚会模式：棋盘中间一张大状态卡，谁在哪、在手机上做什么，忘了操作的人一眼就能被提醒
+// 房间棋盘中央显示当前玩家、所在位置以及待进行的决策。
 function statusCard(s, cur) {
   const sq = SQUARES[cur.pos];
   const where = `<div class="pc-where">${squareArt(sq, 'big')}<span>${cur.inJail ? '在监狱里' : `停在 <b>${esc(sq.name)}</b>`}</span></div>`;
@@ -1404,7 +1403,7 @@ function renderOfferCard() {
   el.innerHTML = `
     <div class="oc-head">${avatar(seller, 'sm')}<b>${esc(seller.name)} 出售</b></div>
     <div class="oc-what">${squareArt(sq, 'big')}<div><div class="oc-name">${esc(sq.name)}</div>
-      <div class="offer-tags">${pr.houses ? `<em class="bk-house">连${houseText(pr.houses)}</em>` : '<em class="bk-house">空地</em>'}${pr.mortgaged ? '<em class="bk-mort">抵押中</em>' : ''}<em class="bk-rent">过路费 ${money(rentNow(o.square))}</em></div></div></div>
+      <div class="offer-tags">${pr.houses ? `<em class="bk-house">连${houseText(pr.houses)}</em>` : '<em class="bk-house">空地</em>'}${pr.mortgaged ? '<em class="bk-mort">抵押中</em>' : ''}<em class="bk-rent">过路费 ${rentPreview(G.state, o.square)}</em></div></div></div>
     <div class="oc-price">${money(o.price)}</div>
     <div class="oc-buyers">${buyers.map(b => `<span class="${cash(b) >= o.price ? 'can' : ''}">${avatar(b, 'sm')}<i>${cash(b) >= o.price ? '买得起' : '钱不够'}</i></span>`).join('')}</div>
     <div class="oc-hint">在你的操作区点「抢购」，谁先点谁买</div>`;
