@@ -168,6 +168,15 @@ async function roomFlow() {
     assert.equal(await p.page.locator('#prompt.show, #cardLayer.show').count(), 0);
   }
   console.log('✓ 默认确认超时后两台浏览器都收起弹框、显示结算');
+  // A host handover only changes room metadata; the completed game keeps the same seq.
+  await guest.page.evaluate(async ({room, me}) => {
+    const {updateRoomBoard} = await import('/play.js');
+    const button = document.querySelector('#again');
+    updateRoomBoard({...room, hostId:me}, me, () => {});
+    if (button.textContent !== '再来一局') throw Error('接任房主后未显示重赛按钮');
+    updateRoomBoard(room, me, () => {});
+    if (button.textContent !== '查看棋盘') throw Error('普通座位的结算按钮不正确');
+  }, {room:guest.room, me:guest.id});
   await host.page.locator('#again').click();
   await guest.page.locator('[data-ready="1"]').waitFor();
   assert.equal(guest.room.seats.length, 2);

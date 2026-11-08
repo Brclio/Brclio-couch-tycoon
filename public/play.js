@@ -1313,6 +1313,9 @@ export function updateRoomBoard(room, me, send, { started = false, reconnect = f
   P.me = me;
   P.send = send;
   P.room = room;
+  // Host transfer can happen after the results have already been displayed.
+  const resultButton = room.game?.status === 'ended' && $('again');
+  if (resultButton) resultButton.textContent = room.hostId === me ? '再来一局' : '查看棋盘';
   if (room.paused && P.presented) P.presented.sent = false;
   P.autoEndAt = room.autoEnd ? performance.now() + room.autoEnd.left : 0;
   if (P.prompt && room.waitingFor?.id !== P.prompt.id) detachRoomBoard();
