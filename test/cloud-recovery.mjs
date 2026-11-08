@@ -142,13 +142,14 @@ try {
     export { GuestRoom, MatchArchive } from ${JSON.stringify(path.join(root, 'cloud/room.js'))};
     export { Lobby } from ${JSON.stringify(path.join(root, 'cloud/lobby.js'))};
     export { LocalSave } from ${JSON.stringify(path.join(root, 'cloud/save.js'))};
+    export { GitBudget } from ${JSON.stringify(path.join(root, 'cloud/git-budget.js'))};
     const original=globalThis.fetch.bind(globalThis);
     globalThis.fetch=(url, init)=>original(typeof url==='string' && url.startsWith('https://api.github.com/')
       ? url.replace('https://api.github.com',${JSON.stringify(fixtureBase)}) : url,init);
     export default worker;
   `
   );
-  const classes = { ROOMS: 'GuestRoom', ARCHIVES: 'MatchArchive', LOBBY: 'Lobby', SAVES: 'LocalSave' };
+  const classes = { ROOMS: 'GuestRoom', ARCHIVES: 'MatchArchive', LOBBY: 'Lobby', SAVES: 'LocalSave', GIT_BUDGET: 'GitBudget' };
   await writeFile(
     path.join(temp, 'wrangler.json'),
     JSON.stringify({

@@ -1,9 +1,10 @@
 // 端到端：两个账号通过服务器建桌（上锁）→ 邀请码加入 → 开局 → 随机打完 → 再来一局。
-// 用法：先 npm start，再 node test/e2e.mjs
+// 用法：先 npm start，再 node test/e2e.mjs http://localhost:5200；旧 Node 服务可传入其他端口。
 import WebSocket from 'ws';
 import { legalActions, current } from '../shared/engine.js';
 
-const BASE = 'http://localhost:5178';
+const BASE = new URL(process.argv[2] || 'http://localhost:5178').origin;
+const WS = BASE.replace(/^http/, 'ws');
 const rnd = Math.random().toString(36).slice(2, 7);
 
 async function account(name) {
@@ -15,7 +16,7 @@ async function account(name) {
 }
 
 function client(token) {
-  const ws = new WebSocket(`ws://localhost:5178/ws?token=${token}`);
+  const ws = new WebSocket(`${WS}/ws?token=${token}`);
   const c = { ws, table: null, lobby: [], errors: [], waiters: [] };
   ws.on('message', (raw) => {
     const m = JSON.parse(raw);

@@ -1,19 +1,34 @@
 import assert from 'node:assert/strict';
-import {createGame} from '../shared/engine.js';
-const base=new URL(process.argv[2] || 'http://localhost:5200').origin;
-const created=await fetch(base+'/api/saves',{method:'POST'});
-assert.equal(created.status,201);
-const {id,token}=await created.json();
-const url=base+'/api/saves/'+id, headers={Authorization:'Bearer '+token};
-assert.equal((await fetch(url)).status,404);
-const g=createGame([{id:'A',name:'小狗',avatar:'1f436'},{id:'B',name:'熊猫',avatar:'1f43c'}],{shuffleOrder:false},{now:Date.now(),rng:()=>0.3});
-const slot={state:g,viewer:'A',feed:[]};
-const put=(value,revision)=>fetch(url,{method:'PUT',headers:{...headers,'Content-Type':'application/json','If-Match':String(revision)},body:JSON.stringify(value)});
-const invalid=structuredClone(slot);invalid.state.players[0].pos=68;
-assert.equal((await put(invalid,0)).status,400);
-assert.equal((await put(slot,0)).status,200);
-const competing=await Promise.all([put(slot,1),put(slot,1)]);
-assert.deepEqual(competing.map(r=>r.status).sort(),[200,409]);
-const actual=await (await fetch(url,{headers})).json();
-assert.equal(actual.revision,2);assert.deepEqual(actual.slot,slot);
-console.log('✓ 单机私有存档：拒绝无凭据读取、拒绝坏局面、并发写仅提交一次、读取完整局面与牌堆',id);
+import { createGame } from '../shared/engine.js';
+const base = new URL(process.argv[2] || 'http://localhost:5200').origin;
+const created = await fetch(base + '/api/saves', { method: 'POST' });
+assert.equal(created.status, 201);
+const { id, token } = await created.json();
+const url = base + '/api/saves/' + id,
+  headers = { Authorization: 'Bearer ' + token };
+assert.equal((await fetch(url)).status, 404);
+const g = createGame(
+  [
+    { id: 'A', name: '小狗', avatar: '1f436' },
+    { id: 'B', name: '熊猫', avatar: '1f43c' },
+  ],
+  { shuffleOrder: false },
+  { now: Date.now(), rng: () => 0.3 },
+);
+const slot = { state: g, viewer: 'A', feed: [] };
+const put = (value, revision) =>
+  fetch(url, {
+    method: 'PUT',
+    headers: { ...headers, 'Content-Type': 'application/json', 'If-Match': String(revision) },
+    body: JSON.stringify(value),
+  });
+const invalid = structuredClone(slot);
+invalid.state.players[0].pos = 68;
+assert.equal((await put(invalid, 0)).status, 400);
+assert.equal((await put(slot, 0)).status, 200);
+const competing = await Promise.all([put(slot, 1), put(slot, 1)]);
+assert.deepEqual(competing.map((r) => r.status).sort(), [200, 409]);
+const actual = await (await fetch(url, { headers })).json();
+assert.equal(actual.revision, 2);
+assert.deepEqual(actual.slot, slot);
+console.log('✓ 单机私有存档：拒绝无凭据读取、拒绝坏局面、并发写仅提交一次、读取完整局面与牌堆', id);

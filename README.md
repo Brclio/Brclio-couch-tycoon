@@ -42,15 +42,16 @@ node test/cloud-save.mjs http://127.0.0.1:5200
 node test/cloud-recovery.mjs
 node --test test/cloud-room-state.mjs
 node test/web.mjs http://127.0.0.1:5200
+node test/cloud-save-web.mjs http://127.0.0.1:5200
 ```
 
-浏览器回归使用已安装的 Chrome。测试脚本会创建独立浏览器上下文，测试注册账号和房间应优先在本地运行。历史 Node 服务仍保留在 `server.js`，原有协议回归见 `test/party.mjs`、`test/e2e.mjs`。
+也可以运行 `npm run verify`，自动启动一次性本地 Worker 并执行规则、WebSocket、存储恢复和浏览器回归。浏览器回归使用已安装的 Chrome。测试脚本会创建独立浏览器上下文，测试注册账号和房间应优先在本地运行。历史 Node 服务仍保留在 `server.js`，原有协议回归见 `test/party.mjs`、`test/e2e.mjs`。
 
 ## Cloudflare 与 GitHub
 
 公开源码为 [Brclio/Brclio-couch-tycoon](https://github.com/Brclio/Brclio-couch-tycoon)，私有数据为 [BrclioData/brclio-couch-tycoon-data](https://github.com/BrclioData/brclio-couch-tycoon-data)。部署配置使用静态资源、Worker 和 SQLite 后端的 Durable Objects，适配 Workers Free。生产构建命令是 `npm run assets`，部署命令是 `npx wrangler deploy`。
 
-Cloudflare 的 Secret `GITHUB_APP_PRIVATE_KEY` 使用 PKCS#8 PEM。App 必须安装到数据仓库，并拥有 Contents 读写权限。Worker 签发仅限该仓库的短期令牌。游戏动作先写入 Durable Objects，随后合并提交到 GitHub；写入失败会保留待同步状态并重试。对局结算另外保留完整终局。文件路径与恢复说明见[技术方案](技术方案.md)。
+Cloudflare 的 Secret `GITHUB_APP_PRIVATE_KEY` 使用 PKCS#8 PEM。App 必须安装到数据仓库，并拥有 Contents 读写权限。Worker 签发仅限该仓库的短期令牌。游戏动作先写入 Durable Objects，随后合并提交到 GitHub；整库写入按分钟和小时限速，GitHub 返回限流时保留待同步状态并按指定时间重试。对局结算另外保留完整终局。文件路径与恢复说明见[技术方案](技术方案.md)。
 
 音效由浏览器合成，中文语音可使用系统朗读。原有 Gemini 配音可通过 Worker Secret `GEMINI_API_KEY` 启用，属于可选外部服务。
 

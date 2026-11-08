@@ -1,3 +1,4 @@
+import { githubRequest } from './git-budget.js';
 import { repositoryToken } from './github-auth.js';
 // Each Durable Object owns one logical snapshot. Local chunking keeps values within
 // the DO KV limit. The persistent outbox coalesces moves and survives eviction.
@@ -5,7 +6,6 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const PART_BYTES = 48 * 1024;
 const SYNC_INTERVAL = 15_000;
-
 async function readSnapshot(storage, meta) {
   const keys = Array.from({ length: meta.parts }, (_, i) => 'snapshot:' + i);
   const bytes = new Uint8Array(meta.size);
@@ -23,7 +23,7 @@ async function readSnapshot(storage, meta) {
 async function writeSnapshot(storage, value, metadata) {
   const bytes = encoder.encode(JSON.stringify(value));
   const parts = Math.ceil(bytes.length / PART_BYTES);
-  await storage.transaction(async tx => {
+  await storage.transaction(async (tx) => {
     const prev = await tx.get('sync');
     for (let i = 0; i < parts; i++)
       await tx.put('snapshot:' + i, bytes.slice(i * PART_BYTES, (i + 1) * PART_BYTES));
@@ -34,8 +34,7 @@ async function writeSnapshot(storage, value, metadata) {
 
 function base64(bytes) {
   let raw = '';
-  for (let i = 0; i < bytes.length; i += 8192)
-    raw += String.fromCharCode(...bytes.subarray(i, i + 8192));
+  for (let i = 0; i < bytes.length; i += 8192) raw += String.fromCharCode(...bytes.subarray(i, i + 8192));
   return btoa(raw);
 }
 
@@ -59,21 +58,25 @@ export class GitHubState {
   async api(endpoint, options = {}) {
     if (!/^[\w.-]+\/[\w.-]+$/.test(this.env.GITHUB_REPOSITORY || ''))
       throw new Error('Private GitHub storage is not configured');
-    return fetch('https://api.github.com/repos/' + this.env.GITHUB_REPOSITORY + endpoint, {
+    const token = await repositoryToken(this.env);
+    return githubRequest(this.env, 'https://api.github.com/repos/' + this.env.GITHUB_REPOSITORY + endpoint, {
       ...options,
       headers: {
-        Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + await repositoryToken(this.env),
-        'User-Agent': 'party-tycoon-storage', 'X-GitHub-Api-Version': '2022-11-28',
-        ...(options.headers || {})
+        Accept: 'application/vnd.github+json',
+        Authorization: 'Bearer ' + token,
+        'User-Agent': 'party-tycoon-storage',
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...(options.headers || {}),
       },
-      signal: AbortSignal.timeout(12000)
+      signal: AbortSignal.timeout(12000),
     });
   }
 
   async verifyRepository() {
     if (this.verifiedUntil > Date.now()) return;
     const r = await this.api('');
-    if (!r.ok || (await r.json()).private !== true) throw new Error('A writable private data repository is required');
+    if (!r.ok || (await r.json()).private !== true)
+      throw new Error('A writable private data repository is required');
     this.verifiedUntil = Date.now() + 60_000;
   }
 
@@ -89,9 +92,11 @@ export class GitHubState {
     const info = await r.json();
     let bytes;
     if (info.encoding === 'base64') {
-      bytes = Uint8Array.from(atob(info.content.replace(/\s/g, '')), c => c.charCodeAt(0));
+      bytes = Uint8Array.from(atob(info.content.replace(/\s/g, '')), (c) => c.charCodeAt(0));
     } else {
-      const blob = await this.api('/git/blobs/' + info.sha, {headers:{Accept:'application/vnd.github.raw+json'}});
+      const blob = await this.api('/git/blobs/' + info.sha, {
+        headers: { Accept: 'application/vnd.github.raw+json' },
+      });
       if (!blob.ok) throw new Error('GitHub blob read failed (' + blob.status + ')');
       bytes = new Uint8Array(await blob.arrayBuffer());
     }
@@ -108,17 +113,21 @@ export class GitHubState {
     const remote = await this.remote();
     if (!remote) return null;
     await writeSnapshot(this.storage, remote.envelope.snapshot, () => ({
-      revision: remote.envelope.revision, sha: remote.sha, next: null, failures: 0
+      revision: remote.envelope.revision,
+      sha: remote.sha,
+      next: null,
+      failures: 0,
     }));
     return remote.envelope.snapshot;
   }
 
   async save(snapshot) {
     const local = this.env.STORAGE_MODE === 'local';
-    await writeSnapshot(this.storage, snapshot, previous => ({
+    await writeSnapshot(this.storage, snapshot, (previous) => ({
       revision: (previous?.revision || 0) + 1,
-      sha: previous?.sha || null, failures: previous?.failures || 0,
-      next: local ? null : (previous?.next ?? Date.now() + SYNC_INTERVAL)
+      sha: previous?.sha || null,
+      failures: previous?.failures || 0,
+      next: local ? null : (previous?.next ?? Date.now() + SYNC_INTERVAL),
     }));
     const next = await this.getNextFlushAt();
     if (next != null) {
@@ -137,25 +146,48 @@ export class GitHubState {
     try {
       await this.verifyRepository();
       const value = await readSnapshot(this.storage, meta);
-      const envelope = {version:1,key:this.key,revision:meta.revision,snapshot:value};
+      const envelope = { version: 1, key: this.key, revision: meta.revision, snapshot: value };
       const content = base64(await compressed(envelope));
       let sha = meta.sha;
-      const put = () => this.api(this.path, {method:'PUT',body:JSON.stringify({
-        message: 'Save ' + this.key + ' revision ' + meta.revision,
-        branch: this.env.GITHUB_BRANCH || 'main', content, ...(sha ? {sha} : {})
-      })});
+      const put = () =>
+        this.api(this.path, {
+          method: 'PUT',
+          body: JSON.stringify({
+            message: 'Save ' + this.key + ' revision ' + meta.revision,
+            branch: this.env.GITHUB_BRANCH || 'main',
+            content,
+            ...(sha ? { sha } : {}),
+          }),
+        });
       let r = await put();
       if (r.status === 409 || r.status === 422) {
+        // Validation errors unrelated to the file SHA cannot be solved by another PUT.
+        if (r.status === 422) {
+          const details = await r
+            .clone()
+            .json()
+            .catch(() => ({}));
+          if (!/\bsha\b|already exists/i.test(JSON.stringify(details)))
+            throw new Error('GitHub validation failed (422)');
+        }
         // A previous request may already have reached GitHub before its response was lost.
         const remote = await this.remote();
         if (remote && remote.envelope.revision >= meta.revision) {
-          if (remote.envelope.revision !== meta.revision ||
-              JSON.stringify(remote.envelope.snapshot) !== JSON.stringify(value))
+          if (
+            remote.envelope.revision !== meta.revision ||
+            JSON.stringify(remote.envelope.snapshot) !== JSON.stringify(value)
+          )
             throw new Error('Conflicting newer remote snapshot');
           sha = remote.sha;
           r = null;
         } else {
           sha = remote?.sha || null;
+          // A second write needs its own allowance. Keep the corrected SHA even when
+          // that permit is deferred, so the next alarm does not replay a stale SHA.
+          await this.storage.transaction(async (tx) => {
+            const current = await tx.get('sync');
+            await tx.put('sync', { ...current, sha });
+          });
           r = await put();
         }
       }
@@ -163,16 +195,28 @@ export class GitHubState {
         if (!r.ok) throw new Error('GitHub write failed (' + r.status + ')');
         sha = (await r.json()).content.sha;
       }
-      await this.storage.transaction(async tx => {
+      await this.storage.transaction(async (tx) => {
         const current = await tx.get('sync');
-        await tx.put('sync', {...current,sha,failures:0,next:current.revision === meta.revision ? null : Date.now()+SYNC_INTERVAL});
+        await tx.put('sync', {
+          ...current,
+          sha,
+          failures: 0,
+          next: current.revision === meta.revision ? null : Date.now() + SYNC_INTERVAL,
+        });
       });
     } catch (err) {
-      console.error('Snapshot sync deferred', this.key, err.message);
-      await this.storage.transaction(async tx => {
+      if (!err.contention) console.error('Snapshot sync deferred', this.key, err.message);
+      await this.storage.transaction(async (tx) => {
         const current = await tx.get('sync');
         const failures = (current.failures || 0) + 1;
-        await tx.put('sync', {...current,failures,next:Date.now()+Math.min(300000,5000*2**Math.min(6,failures-1))});
+        const now = Date.now();
+        const backoff = Math.min(300000, 5000 * 2 ** Math.min(6, failures - 1));
+        const earliest = err.retryAt
+          ? Math.max(err.retryAt, now + (err.contention ? Math.min(backoff, 30000) : 1000))
+          : now + backoff;
+        const spread = err.retryAt ? Math.min(30000, Math.max(2000, (earliest - now) / 10)) : backoff / 4;
+        const next = earliest + Math.floor(Math.random() * spread);
+        await tx.put('sync', { ...current, failures, next });
       });
     }
   }

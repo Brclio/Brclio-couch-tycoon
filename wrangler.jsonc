@@ -42,6 +42,10 @@
       {
         "name": "ARCHIVES",
         "class_name": "MatchArchive"
+      },
+      {
+        "name": "GIT_BUDGET",
+        "class_name": "GitBudget"
       }
     ]
   },
@@ -53,6 +57,12 @@
         "Lobby",
         "LocalSave",
         "MatchArchive"
+      ]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": [
+        "GitBudget"
       ]
     }
   ],
@@ -70,6 +80,14 @@
       "namespace_id": "31002",
       "simple": {
         "limit": 45,
+        "period": 60
+      }
+    },
+    {
+      "name": "JOIN_LIMIT",
+      "namespace_id": "31003",
+      "simple": {
+        "limit": 90,
         "period": 60
       }
     }

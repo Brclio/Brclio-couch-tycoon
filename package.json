@@ -4,11 +4,12 @@
   "type": "module",
   "scripts": {
     "start": "npm run dev",
-    "test": "node test/rules-regression.mjs && node test/sim.mjs",
+    "test": "node test/rules-regression.mjs && node test/git-budget.mjs && node test/sim.mjs",
     "dev": "npm run assets && wrangler dev --var STORAGE_MODE:local --port 5200",
     "assets": "node scripts/assets.mjs",
     "deploy": "npm run assets && wrangler deploy",
-    "test:classic": "node test/party.mjs"
+    "test:classic": "node test/party.mjs",
+    "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0"
