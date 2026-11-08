@@ -4,6 +4,9 @@
   "main": "cloud/worker.js",
   "compatibility_date": "2026-06-01",
   "workers_dev": true,
+  "routes": [
+    { "pattern": "couch-tycoon.brclio.com", "zone_name": "brclio.com", "custom_domain": true }
+  ],
   "assets": {
     "directory": "./.web-assets",
     "binding": "ASSETS",
