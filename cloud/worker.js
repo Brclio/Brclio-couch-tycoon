@@ -15,12 +15,20 @@ async function page(req, env, file) {
   url.search = '';
   const asset = await env.ASSETS.fetch(new Request(url, { method: req.method }));
   const res = new Response(asset.body, asset);
-  res.headers.set('Cache-Control', 'no-cache');
+  // Cloudflare's zone-level JavaScript Detections copies this nonce onto its injected script.
+  const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(18))));
+  const scriptSources = ["'self'", `'nonce-${nonce}'`];
+  if (url.hostname === 'couch-tycoon.brclio.com') {
+    const beacon = 'https://static.cloudflareinsights.com/beacon.min.js';
+    scriptSources.push(beacon, beacon + '/');
+  }
+  res.headers.set('Cache-Control', 'no-store');
+  res.headers.delete('ETag');
   res.headers.set('Referrer-Policy', 'no-referrer');
   res.headers.set('X-Content-Type-Options', 'nosniff');
   res.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' " +
+    `default-src 'self'; script-src ${scriptSources.join(' ')}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' ` +
       (url.protocol === 'https:' ? 'wss://' : 'ws://') +
       url.host +
       "; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
